@@ -32,6 +32,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,6 +49,7 @@ import androidx.navigation.NavController
 import com.example.appevalaucion.R
 import com.example.appevalaucion.navigate.AppRoutes
 import com.example.appevalaucion.viewmodel.UsuarioViewModel
+import kotlinx.coroutines.launch
 
 private val colorChocolate = Color(0xFF6D4C41)
 private val colorVainilla = Color(0xFFFFF5E1)
@@ -66,6 +68,9 @@ fun CrearUsuarioScreen(
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
 
+
+    var isRegistering by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
     val context = LocalContext.current // Para mostrar mensajes de error
 
     // Colores para los campos de texto
@@ -176,28 +181,55 @@ fun CrearUsuarioScreen(
             // Botón de Registro
             Button(
                 onClick = {
-                    if (nombre.isBlank() || email.isBlank() || password.isBlank()) {
-                        Toast.makeText(
-                            context,
-                            "Por favor, completa todos los campos",
-                            Toast.LENGTH_SHORT
-                        ).show()
-
-                    } else if (email .indexOf('@') == -1 || email.indexOf('.') == -1) {
-                        Toast.makeText(context, "Correo electrónico inválido", Toast.LENGTH_SHORT).show()
-                    } else if (password != confirmPassword) {
-                        Toast.makeText(context, "Las contraseñas no coinciden", Toast.LENGTH_SHORT).show()
-                    } else {
-
-                        viewModel.registrarUsuario(nombre, email, password)
-
-                        // Navegamos a Bienvenida (que luego navega a Home)
-                        navController.navigate(AppRoutes.BIENVENIDA) {
-                            // Limpiamos el historial de autenticación (Login y CrearUsuario)
-                            popUpTo(AppRoutes.LOGIN) { inclusive = true }
+                    // Validaciones primero
+                    when {
+                        nombre.isBlank() || email.isBlank() || password.isBlank() -> {
+                            Toast.makeText(
+                                context,
+                                "Por favor, completa todos los campos",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                        email.indexOf('@') == -1 || email.indexOf('.') == -1 -> {
+                            Toast.makeText(
+                                context,
+                                "Correo electrónico inválido",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                        password != confirmPassword -> {
+                            Toast.makeText(
+                                context,
+                                "Las contraseñas no coinciden",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                        !isRegistering -> {
+                            // Solo ejecutar si no está registrando
+                            isRegistering = true
+                            viewModel.registrarUsuario(nombre, email, password) { success ->
+                                isRegistering = false
+                                if (success) {
+                                    Toast.makeText(
+                                        context,
+                                        "Usuario registrado exitosamente",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    navController.navigate(AppRoutes.BIENVENIDA) {
+                                        popUpTo(AppRoutes.LOGIN) { inclusive = true }
+                                    }
+                                } else {
+                                    Toast.makeText(
+                                        context,
+                                        "Error al registrar usuario. Intenta nuevamente.",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            }
                         }
                     }
                 },
+                enabled = !isRegistering,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
@@ -205,7 +237,7 @@ fun CrearUsuarioScreen(
                     containerColor = colorChocolate
                 )
             ) {
-                Text("REGISTRARME")
+                Text(if (isRegistering) "REGISTRANDO..." else "REGISTRARME")
             }
             Spacer(modifier = Modifier.height(24.dp))
         }

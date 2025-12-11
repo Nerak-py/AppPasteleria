@@ -1,7 +1,6 @@
 package com.example.appevalaucion.ui.screen
 
 import androidx.compose.foundation.background
-import com.example.appevalaucion.model.Pastelitos
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -26,34 +25,46 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
-import com.example.appevalaucion.model.listitaProductos
+import com.example.appevalaucion.R
+import com.example.appevalaucion.model.Pastelitos
+import com.example.appevalaucion.viewmodel.ProductosViewModel
 import java.text.NumberFormat
 import java.util.Currency
 import java.util.Locale
-
-import androidx.compose.ui.platform.LocalContext // <--- Importante: Agrega este import
-import androidx.compose.ui.res.painterResource // <--- Importante: Para placeholder si falla
-import com.example.appevalaucion.R // <--- Asegúrate de importar tu R
+import kotlin.compareTo
+import kotlin.text.format
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Home(navController: NavController) {
+fun Home(
+    navController: NavController,
+    productosViewModel: ProductosViewModel // ✅ Agregar ViewModel
+) {
+    // ✅ Cargar productos al iniciar
+    LaunchedEffect(Unit) {
+        productosViewModel.recuperarPastelitos()
+    }
 
-    // lista real desde el modelo
-    val productos = listitaProductos
+    // ✅ Observar lista de productos desde el ViewModel
+    val productos by productosViewModel.pastelitos.collectAsState()
 
-    //Filtro ofertas
-    val ofertas = productos.filter { it.precioOferta  != null}
+    // ✅ Filtrar ofertas
+    val ofertas = remember(productos) {
+        productos.filter { it.precioOferta != null && it.precioOferta!! > 0 }
+    }
 
-
-    Scaffold(
-    ) { paddingValues ->
+    Scaffold { paddingValues ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -61,46 +72,55 @@ fun Home(navController: NavController) {
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-
-            //Ofertas del día
+            // Ofertas del día
             item {
                 Seccion(
                     title = "Ofertas del día",
                     onSeeAllClick = { navController.navigate("ofertas") }
                 ) {
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        items(ofertas) { producto ->
-                            ProductCardSmall(
-                                producto = producto,
-                                onClick = {
-                                    navController.navigate("ofertas")
-                                }
-                            )
+                    if (ofertas.isEmpty()) {
+                        Text(
+                            text = "No hay ofertas disponibles",
+                            modifier = Modifier.padding(16.dp)
+                        )
+                    } else {
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                            items(ofertas, key = { it.id }) { producto -> // ✅ key única
+                                ProductCardSmall(
+                                    producto = producto,
+                                    onClick = { navController.navigate("ofertas") }
+                                )
+                            }
                         }
                     }
                 }
             }
 
-            //Productos destacados
+            // Productos destacados
             item {
                 Seccion(
                     title = "Productos Destacados",
                     onSeeAllClick = { navController.navigate("productos") }
                 ) {
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        items(productos) { producto ->
-                            ProductCardSmall(
-                                producto = producto,
-                                onClick = {
-                                    navController.navigate("productos")
-                                }
-                            )
+                    if (productos.isEmpty()) {
+                        Text(
+                            text = "No hay productos disponibles",
+                            modifier = Modifier.padding(16.dp)
+                        )
+                    } else {
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                            items(productos, key = { it.id }) { producto -> // ✅ key única
+                                ProductCardSmall(
+                                    producto = producto,
+                                    onClick = { navController.navigate("productos") }
+                                )
+                            }
                         }
                     }
                 }
             }
 
-            //Blog
+            // Blog
             item {
                 Seccion(
                     title = "Blog Y Noticias",
@@ -112,8 +132,12 @@ fun Home(navController: NavController) {
                     ) {
                         ListItem(
                             headlineContent = { Text("Pastel de temporada") },
-                            supportingContent = { Text("Descubre nuevas recetas, noticias y tips de repostería artesanal.") },
-                            trailingContent = { Icon(Icons.Default.Book, contentDescription = null) }
+                            supportingContent = {
+                                Text("Descubre nuevas recetas, noticias y tips de repostería artesanal.")
+                            },
+                            trailingContent = {
+                                Icon(Icons.Default.Book, contentDescription = null)
+                            }
                         )
                     }
                 }
@@ -122,9 +146,12 @@ fun Home(navController: NavController) {
     }
 }
 
-// Composable para secciones con título y contenido
 @Composable
-private fun Seccion(title: String, onSeeAllClick: () -> Unit, content: @Composable () -> Unit) {
+private fun Seccion(
+    title: String,
+    onSeeAllClick: () -> Unit,
+    content: @Composable () -> Unit
+) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -140,7 +167,6 @@ private fun Seccion(title: String, onSeeAllClick: () -> Unit, content: @Composab
     }
 }
 
-// 🔹 Tarjeta pequeña de producto
 @Composable
 private fun ProductCardSmall(producto: Pastelitos, onClick: () -> Unit) {
     Card(
@@ -154,22 +180,17 @@ private fun ProductCardSmall(producto: Pastelitos, onClick: () -> Unit) {
             }
         }
 
-        // --- LÓGICA DE IMAGEN NUEVA ---
         val context = LocalContext.current
-
-        // Convertimos el nombre (String) que viene de la BD a un ID (Int) de Android
-        // Usamos 'remember' para no recalcular esto en cada frame
-        val imageResId = remember(producto.image) {
-            // Asumiendo que producto.image es un String como "pastel1"
+        val imageResId = remember(producto.imageUrl) {
+            // ✅ Manejar imageUrl nullable
+            val imageName = producto.imageUrl?.takeIf { it.isNotBlank() } ?: "ic_launcher_foreground"
             val id = context.resources.getIdentifier(
-                producto.image.toString(), // Convertimos a String por seguridad
+                imageName,
                 "drawable",
                 context.packageName
             )
-            // Si no encuentra la imagen (id es 0), usamos una por defecto
             if (id != 0) id else R.drawable.ic_launcher_foreground
         }
-        // -----------------------------
 
         Column(
             modifier = Modifier
@@ -179,26 +200,23 @@ private fun ProductCardSmall(producto: Pastelitos, onClick: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             AsyncImage(
-                // Aquí pasamos el ID numérico que calculamos arriba
                 model = imageResId,
                 contentDescription = producto.nombre,
                 modifier = Modifier
                     .size(100.dp)
                     .padding(top = 8.dp),
-                // Es bueno poner un placeholder por si tarda en cargar
                 placeholder = painterResource(R.drawable.ic_launcher_foreground),
                 error = painterResource(R.drawable.ic_launcher_foreground)
             )
 
             Text(
-                text = producto.nombre,
+                text = producto.nombre ?: "Sin nombre", // ✅ Manejar nombre nullable
                 style = MaterialTheme.typography.bodyLarge,
                 maxLines = 1
             )
 
-            // Precio normal
             Text(
-                text = formatoPrecio.format(producto.precio),
+                text = formatoPrecio.format(producto.precio ?: 0.0), // ✅ Manejar precio nullable
                 style = MaterialTheme.typography.bodyMedium,
                 color = if (producto.precioOferta != null)
                     MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
@@ -206,23 +224,22 @@ private fun ProductCardSmall(producto: Pastelitos, onClick: () -> Unit) {
                     MaterialTheme.colorScheme.primary
             )
 
-            // Precio de oferta si existe
-            if (producto.precioOferta != null) {
+            if (producto.precioOferta != null && producto.precioOferta!! > 0) {
                 Text(
-                    text = formatoPrecio.format(producto.precioOferta),
+                    text = formatoPrecio.format(producto.precioOferta!!),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.primary
                 )
                 Text(
                     text = "¡Oferta!",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.secondary,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSecondary,
                     modifier = Modifier
                         .background(
                             color = MaterialTheme.colorScheme.secondary,
                             shape = RoundedCornerShape(6.dp)
                         )
-                        .padding(8.dp, 6.dp)
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
                 )
             }
         }

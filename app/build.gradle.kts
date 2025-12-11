@@ -12,6 +12,11 @@ android {
 
     }
 
+    composeCompiler {
+        reportsDestination = layout.buildDirectory.dir("compose_compiler")
+        metricsDestination = layout.buildDirectory.dir("compose_compiler")
+    }
+
     defaultConfig {
         applicationId = "com.example.appevalaucion"
         minSdk = 24
@@ -69,23 +74,23 @@ android {
 dependencies {
         implementation(libs.androidx.material3)
     implementation(libs.play.services.location)
-    val nav_version = "2.9.5"
+    val nav_version = "2.9.6"
 
     // Retrofit
-    implementation("com.squareup.retrofit2:retrofit:2.9.0")
-    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation(libs.retrofit)
+    implementation("com.squareup.retrofit2:converter-gson:3.0.0")
 
     // Coroutines
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
 
     // ViewModel utilities for Compose
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.3")
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.3")
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
 
     // Activity Compose
-    implementation("androidx.activity:activity-compose:1.9.0")
+    implementation(libs.androidx.activity.compose)
 
-
+    implementation("io.coil-kt:coil-compose:2.6.0")
 
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.2")
@@ -96,12 +101,12 @@ dependencies {
 
 
     implementation("androidx.navigation:navigation-compose:$nav_version")
-    implementation("io.coil-kt:coil-compose:2.6.0")
-    implementation("androidx.compose.ui:ui-text-google-fonts:1.6.7")
+    implementation("io.coil-kt:coil-compose:2.7.0")
+    implementation(libs.androidx.compose.ui.text.google.fonts)
 
 
     implementation("androidx.compose.material:material-icons-extended:1.7.8")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.0") //
+    implementation(libs.androidx.lifecycle.lifecycle.viewmodel.compose) //
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -111,27 +116,27 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
     testImplementation(libs.junit)
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.1")
-    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
+    testImplementation(libs.junit)
 
 
     // Pruebas Unitarias
     // MockK
-    testImplementation("io.mockk:mockk:1.13.8")
+    testImplementation("io.mockk:mockk:1.14.7")
     // Si también haces pruebas instrumentadas (androidTest), añade esta línea también:
-    androidTestImplementation("io.mockk:mockk-android:1.13.8")
+    androidTestImplementation("io.mockk:mockk-android:1.14.7")
     // --- Instrumented Tests (androidTest - UI Tests) ---
 
     // Dependencias base de AndroidX Test (Versiones actualizadas y compatibles)
     // Usa las versiones del libs.versions.toml si existen, si no, usa cableado:
-    androidTestImplementation("androidx.test.ext:junit:1.1.5") // Usa una version consistente
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1") // Usa una version consistente
+    androidTestImplementation(libs.androidx.junit) // Usa una version consistente
+    androidTestImplementation(libs.androidx.espresso.core) // Usa una version consistente
 
     // Dependencias de Compose UI Test (usando el BOM para compatibilidad)
     androidTestImplementation(libs.androidx.compose.ui.test.junit4) // Usa la versión gestionada por el BOM/libs
 
-    androidTestImplementation("androidx.test:runner:1.6.1")
-    androidTestImplementation("androidx.test:rules:1.6.1")
+    androidTestImplementation("androidx.test:runner:1.7.0")
+    androidTestImplementation("androidx.test:rules:1.7.0")
 
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

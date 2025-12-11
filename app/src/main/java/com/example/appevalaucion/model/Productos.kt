@@ -1,105 +1,86 @@
 package com.example.appevalaucion.model
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext // <--- 1. IMPORTAR ESTO
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.appevalaucion.R // <--- 2. IMPORTAR TU R (Asegúrate que el paquete sea correcto)
-import java.text.NumberFormat
-import java.util.Currency
-import java.util.Locale
+import coil.compose.AsyncImage // ✅ IMPORTANTE: Esto es Coil
+import coil.request.ImageRequest
 
 @Composable
 fun ProductoCard(
-    producto: Pastelitos,
-    onCardClick: () -> Unit,
-    onAddToCartClick: () -> Unit,
+    producto: Pastelitos, // Asegúrate de que tu modelo tenga 'imagenUrl'
+    onClick: () -> Unit,
+    onAddToCartClick: () -> Unit
 ) {
-
-    val formatoPrecio = remember {
-        NumberFormat.getCurrencyInstance(
-            Locale("es", "CL")).apply {
-            currency = Currency.getInstance("CLP")
-            maximumFractionDigits = 0
-        }
-    }
-
-    // --- 3. LÓGICA DE CONVERSIÓN (String -> Int) ---
-    val context = LocalContext.current
-    val imageResId = remember(producto.image) {
-        val id = context.resources.getIdentifier(
-            producto.image,
-            "drawable",
-            context.packageName
-        )
-        // Si no encuentra la imagen, usa un ícono por defecto para que no falle
-        if (id != 0) id else R.drawable.ic_launcher_foreground
-    }
-    // -----------------------------------------------
-
     Card(
-        onClick = onCardClick,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp)
+            .clickable { onClick() },
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        Column {
-            Image(
-                // USA EL ID CONVERTIDO AQUÍ
-                painter = painterResource(id = imageResId),
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(producto.imageUrl)
+                    .listener(
+                        onError = { _, result ->
+                            android.util.Log.e("ErrorImagen", "No cargó: ${result.throwable.message}")
+                        },
+                        onSuccess = { _, _ ->
+                            android.util.Log.d("ExitoImagen", "Imagen cargada correctamente")
+                        }
+                    )
+                    .crossfade(true)
+                    .build(),
                 contentDescription = producto.nombre,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1f),
-                contentScale = ContentScale.Crop
+                    .size(150.dp)
+                    .clip(RoundedCornerShape(12.dp)),
+                contentScale = ContentScale.Crop,
+                placeholder = painterResource(android.R.drawable.ic_menu_gallery),
+                error = painterResource(android.R.drawable.stat_notify_error)
             )
 
-            Column(
-                modifier = Modifier.padding(12.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = producto.nombre ?: "Sin nombre",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+
+            Text(
+                text = "$ ${producto.precio ?: 0.0}",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.primary
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Button(
+                onClick = onAddToCartClick,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                // ... (El resto del código sigue igual) ...
-                Text(
-                    text = producto.nombre,
-                    style = MaterialTheme.typography.titleMedium
-                )
-
-                if (producto.precioOferta != null) {
-                    Text(
-                        text = formatoPrecio.format(producto.precio),
-                        style = MaterialTheme.typography.bodySmall,
-                        textDecoration = TextDecoration.LineThrough
-                    )
-                    Text(
-                        text = formatoPrecio.format(producto.precioOferta),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                } else {
-                    Text(
-                        text = formatoPrecio.format(producto.precio),
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                }
-
-                Button(
-                    onClick = onAddToCartClick,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(text = "Añadir al carrito")
-                }
+                Icon(Icons.Default.ShoppingCart, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Agregar")
             }
         }
     }

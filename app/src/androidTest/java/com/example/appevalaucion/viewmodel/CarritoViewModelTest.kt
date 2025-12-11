@@ -1,135 +1,191 @@
 package com.example.appevalaucion.viewmodel
 
+import com.example.appevalaucion.model.Carrito
+import com.example.appevalaucion.model.CarritoItem
 import com.example.appevalaucion.model.Pastelitos
+import com.example.appevalaucion.repository.CarritoRepository
+import io.mockk.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.*
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import retrofit2.Response
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class CarritoViewModelTest {
 
     private lateinit var viewModel: CarritoViewModel
+    private lateinit var repository: CarritoRepository
+    private val testDispatcher = StandardTestDispatcher()
 
     // Datos de prueba
     private val pastelito1 = Pastelitos(
-        id = "1",
+        id = "aaa",
         nombre = "Pastel de Chocolate",
         categoria = "Test",
         descripcion = "Desc",
         precio = 10.0,
-        image = "a"
+        imagenUrl = "a"
     )
     private val pastelito2 = Pastelitos(
-        id = "2",
-        nombre = "Pastel de Fresa",
+        id = "bbb",
+        nombre = "Pastel de Vainilla",
         categoria = "Test",
         descripcion = "Desc",
         precio = 12.0,
-        precioOferta = 9.0,
-        image = "b"
+        imageUrl = "b"
     )
+
+    private val usuarioId = 1L
+    private val carritoId = 1L
 
     @Before
     fun setUp() {
-        viewModel = CarritoViewModel()
+        Dispatchers.setMain(testDispatcher)
+        repository = mockk()
+
+        // Inyectar el mock en el ViewModel
+        viewModel = CarritoViewModel().apply {
+            // Si tu ViewModel usa constructor injection, pásalo aquí
+            // O usa reflection para inyectar el mock
+        }
+
+
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
+        unmockkAll()
     }
 
     @Test
-    fun anadirAlCarritoAnadeNuevoItemSiNoExiste() {
-        // When
-        viewModel.anadirAlCarrito(pastelito1)
-
-        // Then
-        assertEquals(1, viewModel.carritoItems.size)
-        assertEquals("1", viewModel.carritoItems[0].producto.id)
-        assertEquals(1, viewModel.carritoItems[0].cantidad)
-    }
-
-    @Test
-    fun anadirAlCarritoIncrementaCantidadSiItemYaExiste() {
+    fun cargarCarritoObtieneItemsCorrectamente() = runTest {
         // Given
-        viewModel.anadirAlCarrito(pastelito1)
+        val carrito = Carrito(id = carritoId, usuario = null, items = emptyList())
+        val items = listOf(
+            CarritoItem(id = 1L, carrito = carrito, pastelitos = pastelito1, cantidad = 1)
+        )
+
+        coEvery { repository.getCarritoByUsuario(usuarioId) } returns Response.success(carrito)
+        coEvery { repository.getItemsByCarrito(carritoId) } returns Response.success(items)
 
         // When
-        viewModel.anadirAlCarrito(pastelito1)
+        viewModel.cargarCarrito(usuarioId)
+        testDispatcher.scheduler.advanceUntilIdle()
 
         // Then
-        assertEquals(1, viewModel.carritoItems.size)
-        assertEquals(2, viewModel.carritoItems[0].cantidad)
+        val carritoItems = viewModel.carritoItems.first()
+        assertEquals(1, carritoItems.size)
+        assertEquals(pastelito1.id, carritoItems[0].pastelitos?.id)
+
+        coVerify { repository.getCarritoByUsuario(usuarioId) }
+        coVerify { repository.getItemsByCarrito(carritoId) }
     }
 
     @Test
-    fun sumarCantidadIncrementaCantidadDelItem() {
+    fun actualizarCantidadModificaCantidadDelItem() = runTest {
         // Given
-        viewModel.anadirAlCarrito(pastelito1)
-        val item = viewModel.carritoItems[0]
+        val carrito = Carrito(id = carritoId, usuario = null, items = emptyList())
+        val itemId = 1L
+        val item = CarritoItem(id = itemId, carrito = carrito, pastelitos = pastelito1, cantidad = 1)
+        val itemActualizado = item.copy(cantidad = 3)
+
+        coEvery { repository.getCarritoByUsuario(usuarioId) } returns Response.success(carrito)
+        coEvery { repository.getItemsByCarrito(carritoId) } returns Response.success(listOf(item))
+        coEvery { repository.updateCarritoItem(itemId, any()) } returns Response.success(itemActualizado)
+
+        viewModel.cargarCarrito(usuarioId)
+        testDispatcher.scheduler.advanceUntilIdle()
 
         // When
-        viewModel.sumarCantidad(item)
+        viewModel.actualizarCantidad(itemId, 3)
+        testDispatcher.scheduler.advanceUntilIdle()
 
         // Then
-        assertEquals(2, viewModel.carritoItems[0].cantidad)
+        coVerify { repository.updateCarritoItem(eq(itemId), any()) }
     }
 
     @Test
-    fun restarCantidadDisminuyeCantidadSiEsMayorA1() {
+    fun eliminarItemEliminaDelCarrito() = runTest {
         // Given
-        viewModel.anadirAlCarrito(pastelito1)
-        viewModel.anadirAlCarrito(pastelito1) // cantidad = 2
-        val item = viewModel.carritoItems[0]
+        val carrito = Carrito(id = carritoId, usuario = null, items = emptyList())
+        val itemId = 1L
+        val item = CarritoItem(id = itemId, carrito = carrito, pastelitos = pastelito1, cantidad = 1)
+
+        coEvery { repository.getCarritoByUsuario(usuarioId) } returns Response.success(carrito)
+        coEvery { repository.getItemsByCarrito(carritoId) } returnsMany listOf(
+            Response.success(listOf(item)),
+            Response.success(emptyList())
+        )
+        coEvery { repository.deleteCarritoItem(itemId) } returns Response.success(Unit)
+
+        viewModel.cargarCarrito(usuarioId)
+        testDispatcher.scheduler.advanceUntilIdle()
 
         // When
-        viewModel.restarCantidad(item)
+        viewModel.eliminarItem(itemId)
+        testDispatcher.scheduler.advanceUntilIdle()
 
         // Then
-        assertEquals(1, viewModel.carritoItems[0].cantidad)
+        coVerify { repository.deleteCarritoItem(itemId) }
     }
 
     @Test
-    fun restarCantidadEliminaItemSiCantidadEs1() {
+    fun vaciarCarritoEliminaTodosLosItems() = runTest {
         // Given
-        viewModel.anadirAlCarrito(pastelito1)
-        val item = viewModel.carritoItems[0]
+        val carrito = Carrito(id = carritoId, usuario = null, items = emptyList())
+        val items = listOf(
+            CarritoItem(id = 1L, carrito = carrito, pastelitos = pastelito1, cantidad = 1),
+            CarritoItem(id = 2L, carrito = carrito, pastelitos = pastelito2, cantidad = 2)
+        )
+
+        coEvery { repository.getCarritoByUsuario(usuarioId) } returns Response.success(carrito)
+        coEvery { repository.getItemsByCarrito(carritoId) } returns Response.success(items)
+        coEvery { repository.deleteCarritoItem(any()) } returns Response.success(Unit)
+
+        viewModel.cargarCarrito(usuarioId)
+        testDispatcher.scheduler.advanceUntilIdle()
 
         // When
-        viewModel.restarCantidad(item)
+        viewModel.vaciarCarrito()
+        testDispatcher.scheduler.advanceUntilIdle()
 
         // Then
-        assertTrue(viewModel.carritoItems.isEmpty())
+        assertTrue(viewModel.carritoItems.first().isEmpty())
+        coVerify(exactly = 2) { repository.deleteCarritoItem(any()) }
     }
 
     @Test
-    fun eliminarDelCarritoEliminaItemDelCarrito() {
+    fun precioTotalCalculaCorrectamente() = runTest {
         // Given
-        viewModel.anadirAlCarrito(pastelito1)
-        val item = viewModel.carritoItems[0]
+        val carrito = Carrito(id = carritoId, usuario = null, items = emptyList())
+        val items = listOf(
+            CarritoItem(id = 1L, carrito = carrito, pastelitos = pastelito1, cantidad = 2),
+            CarritoItem(id = 2L, carrito = carrito, pastelitos = pastelito2, cantidad = 1)
+        )
+
+        coEvery { repository.getCarritoByUsuario(usuarioId) } returns Response.success(carrito)
+        coEvery { repository.getItemsByCarrito(carritoId) } returns Response.success(items)
 
         // When
-        viewModel.eliminarDelCarrito(item)
+        viewModel.cargarCarrito(usuarioId)
+        testDispatcher.scheduler.advanceUntilIdle()
 
         // Then
-        assertTrue(viewModel.carritoItems.isEmpty())
+        val total = viewModel.precioTotal.first()
+        assertEquals(32.0, total, 0.001)
     }
 
     @Test
-    fun obtenerPrecioTotalCalculaTotalCorrectamente() {
-        // Given
-        viewModel.anadirAlCarrito(pastelito1) // 10.0
-        viewModel.anadirAlCarrito(pastelito2) // 9.0 (oferta)
-        viewModel.anadirAlCarrito(pastelito2) // 9.0 (oferta) -> cantidad = 2
-
+    fun precioTotalEsCeroSiCarritoVacio() = runTest {
         // When
-        val total = viewModel.obtenerPrecioTotal()
-
-        // Then
-        // total = 10.0 + (9.0 * 2) = 28.0
-        assertEquals(28.0, total, 0.001)
-    }
-
-    @Test
-    fun obtenerPrecioTotalDevuelveCeroSiCarritoEstaVacio() {
-        // When
-        val total = viewModel.obtenerPrecioTotal()
+        val total = viewModel.precioTotal.first()
 
         // Then
         assertEquals(0.0, total, 0.001)

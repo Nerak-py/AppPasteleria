@@ -4,16 +4,25 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitInstance {
+    private const val BASE_URL = "http://10.0.2.2:8011/api/"
 
-    //cambia la ip segun red local
-    private const val BASE_URL = "http://192.168.0.56:8011/api/"
-
-
-    val api: ApiService by lazy {
+    private val retrofit: Retrofit by lazy {
         Retrofit.Builder()
             .baseUrl(BASE_URL)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
-            .create(ApiService::class.java)
+    }
+
+    val apiPastelitos: ApiServicePastelitos by lazy {
+        retrofit.create(ApiServicePastelitos::class.java)
+    }
+
+    val apiCarrito: ApiServiceCarrito by lazy {
+        retrofit.create(ApiServiceCarrito::class.java)
+    }
+
+
+    val apiUsuario: ApiServiceUsuarios by lazy {
+        retrofit.create(ApiServiceUsuarios::class.java)
     }
 }

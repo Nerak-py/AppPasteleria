@@ -5,7 +5,9 @@ import com.example.appevalaucion.model.Pastelitos
 import com.example.appevalaucion.remote.RetrofitInstance
 
 class PastelitosRepository {
-    private val apiService = RetrofitInstance.api
+    private val apiService = RetrofitInstance.apiPastelitos
+
+
 
     suspend fun recuperarPastelitos(): List<Pastelitos>? {
         return try {
@@ -28,26 +30,10 @@ class PastelitosRepository {
 
     suspend fun grabarPastelito(p: Pastelitos): Boolean{
         val response = apiService.savePastelito(p)
-        if (response.isSuccessful){
-            return true
-        }else{
-            return false
-        }
+        return response.isSuccessful
     }
 
 
-    suspend fun encontrarPastelito(id: String): Pastelitos?{
-        return try {
-            val response = apiService.findPastelito(id)
-            if (response.isSuccessful){
-                response.body()
-            }else{
-                null
-            }
-        }catch (e: Exception){
-            null
-        }
-    }
 
     suspend fun eliminarPastelito(id: String): Boolean{
         return try {

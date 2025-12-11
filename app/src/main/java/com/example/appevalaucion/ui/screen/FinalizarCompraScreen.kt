@@ -17,6 +17,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -27,7 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.appevalaucion.R
 import com.example.appevalaucion.navigate.AppRoutes
-
+import com.example.appevalaucion.viewmodel.CarritoViewModel
 
 
 private val colorChocolate = Color(0xFF6D4C41)
@@ -35,7 +36,17 @@ private val colorVainilla = Color(0xFFFFF5E1)
 
 
 @Composable
-fun FinalizarCompraScreen(navController: NavController) {
+fun FinalizarCompraScreen(
+    navController: NavController,
+    carritoViewModel: CarritoViewModel
+) {
+    // Limpiar carrito al entrar a esta pantalla
+    LaunchedEffect(Unit) {
+        carritoViewModel.vaciarCarrito()
+    }
+
+
+
 
     val backgroundColor = Color(0xFFFFF5E1)
     // Colores personalizados para los TextField
