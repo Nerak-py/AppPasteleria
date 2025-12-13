@@ -38,6 +38,7 @@ fun MenuLateral(
        Items_Menu.Items_Menu8,
        Items_Menu.Items_Menu9,
        Items_Menu.Items_Menu10,
+       Items_Menu.Items_Menu11
 
    )
     ModalNavigationDrawer(

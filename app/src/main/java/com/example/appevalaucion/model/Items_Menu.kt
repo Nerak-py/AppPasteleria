@@ -10,6 +10,7 @@ import androidx.compose.material.icons.outlined.Contacts
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Login
 import androidx.compose.material.icons.outlined.Menu
+import androidx.compose.material.icons.outlined.RestartAlt
 import androidx.compose.material.icons.outlined.ShoppingBag
 import androidx.compose.material.icons.outlined.ShoppingCart
 import androidx.compose.material.icons.sharp.LocalOffer
@@ -75,6 +76,11 @@ sealed class Items_Menu(
         Icons.AutoMirrored.Outlined.Login,
         "Menu",
         AppRoutes.LOGIN)
+
+    object Items_Menu11 : Items_Menu(
+        Icons.Outlined.RestartAlt,
+        "Api Test",
+        AppRoutes.APITEST)
 
 
 
