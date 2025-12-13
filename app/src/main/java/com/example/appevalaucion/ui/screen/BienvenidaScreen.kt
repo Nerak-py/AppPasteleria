@@ -67,8 +67,12 @@ fun BienvenidaScreen(
             verticalArrangement = Arrangement.Center
         ) {
             Text(
-                "Bienvenido A Mil Sabores :)",
+                "Bienvenido",
                 style = MaterialTheme.typography.headlineLarge
+            )
+            Text(
+                "Hola ${usuario?.nombre ?: "..."}",
+                style = MaterialTheme.typography.bodyMedium
             )
         }
     }

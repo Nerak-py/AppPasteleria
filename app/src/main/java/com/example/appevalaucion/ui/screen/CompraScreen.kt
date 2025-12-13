@@ -34,19 +34,12 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.material3.SnackbarHostState
 import com.example.appevalaucion.navigate.AppRoutes
-import com.example.appevalaucion.viewmodel.CarritoViewModel
-import com.example.appevalaucion.viewmodel.ComprasViewModel
 import kotlinx.coroutines.launch
-
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CompraScreen(
-    navController: NavController,
-    carritoViewModel: CarritoViewModel,
-    comprasViewModel: ComprasViewModel
-){
+fun CompraScreen(navController: NavController) {
 
     var nombre by remember { mutableStateOf("") }
     var apellido by remember { mutableStateOf("") }
@@ -61,30 +54,20 @@ fun CompraScreen(
     var apellidoError by remember { mutableStateOf<String?>(null) }
     var direccionError by remember { mutableStateOf<String?>(null) }
     var telefonoError by remember { mutableStateOf<String?>(null) }
-    var numTarjetaError by remember { mutableStateOf<String?>(null) }
-    var fechaExpError by remember { mutableStateOf<String?>(null) }
-    var cvvError by remember { mutableStateOf<String?>(null) }
 
     val isFormValid by remember(
-        nombre, apellido, direccion, telefono, numTarjeta, fechaExp, cvv,
-        nombreError, apellidoError, direccionError, telefonoError,
-        numTarjetaError, fechaExpError, cvvError
+        nombre, apellido, direccion, telefono,
+        nombreError, apellidoError, direccionError, telefonoError
     ) {
         mutableStateOf(
             nombre.isNotBlank() &&
                     apellido.isNotBlank() &&
                     direccion.isNotBlank() &&
                     telefono.isNotBlank() &&
-                    numTarjeta.isNotBlank() &&
-                    fechaExp.isNotBlank() &&
-                    cvv.isNotBlank() &&
                     nombreError == null &&
                     apellidoError == null &&
                     direccionError == null &&
-                    telefonoError == null &&
-                    numTarjetaError == null &&
-                    fechaExpError == null &&
-                    cvvError == null
+                    telefonoError == null
         )
     }
 
@@ -97,7 +80,7 @@ fun CompraScreen(
             TopAppBar(
                 title = { Text("Finalizar Compra") },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = {navController.popBackStack()}) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
                 }
@@ -112,8 +95,7 @@ fun CompraScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text("Información de envío", style = MaterialTheme.typography.titleMedium)
-
+            Text("Informacion de envio", style = MaterialTheme.typography.titleMedium)
             OutlinedTextField(
                 value = nombre,
                 onValueChange = {
@@ -122,9 +104,7 @@ fun CompraScreen(
                 },
                 label = { Text("Nombre") },
                 isError = nombreError != null,
-                supportingText = {
-                    nombreError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                },
+                supportingText = { if (nombreError != null) Text(nombreError!!) },
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -136,9 +116,7 @@ fun CompraScreen(
                 },
                 label = { Text("Apellido") },
                 isError = apellidoError != null,
-                supportingText = {
-                    apellidoError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                },
+                supportingText = { if (apellidoError != null) Text(apellidoError!!) },
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -148,11 +126,9 @@ fun CompraScreen(
                     direccion = it
                     direccionError = validarDireccion(it)
                 },
-                label = { Text("Dirección de entrega") },
+                label = { Text("Direccion de entrega") },
                 isError = direccionError != null,
-                supportingText = {
-                    direccionError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                },
+                supportingText = { if (direccionError != null) Text(direccionError!!) },
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -162,11 +138,9 @@ fun CompraScreen(
                     telefono = it.filter { c -> c.isDigit() }
                     telefonoError = validarTelefono(telefono)
                 },
-                label = { Text("Teléfono de contacto") },
+                label = { Text("Telefono de contacto") },
                 isError = telefonoError != null,
-                supportingText = {
-                    telefonoError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                },
+                supportingText = { if (telefonoError != null) Text(telefonoError!!) },
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -174,74 +148,45 @@ fun CompraScreen(
             HorizontalDivider()
             Spacer(modifier = Modifier.height(16.dp))
 
-            Text("Información de pago", style = MaterialTheme.typography.titleMedium)
-
+            Text("Informacion de pago", style = MaterialTheme.typography.titleMedium)
             OutlinedTextField(
                 value = numTarjeta,
-                onValueChange = {
-                    numTarjeta = it.filter { c -> c.isDigit() }.take(16)
-                    numTarjetaError = validarNumTarjeta(numTarjeta)
-                },
-                label = { Text("Número de tarjeta") },
-                isError = numTarjetaError != null,
-                supportingText = {
-                    numTarjetaError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                },
+                onValueChange = { numTarjeta = it },
+                label = { Text("Numero de tarjeta") },
                 modifier = Modifier.fillMaxWidth()
-            )
 
+            )
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 OutlinedTextField(
                     value = fechaExp,
-                    onValueChange = {
-                        fechaExp = formatearFechaExp(it)
-                        fechaExpError = validarFechaExp(fechaExp)
-                    },
-                    label = { Text("MM/AA") },
-                    isError = fechaExpError != null,
-                    supportingText = {
-                        fechaExpError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                    },
+                    onValueChange = { fechaExp = it },
+                    label = { Text("Fecha de expiracion") },
                     modifier = Modifier.weight(1f)
                 )
-
                 OutlinedTextField(
                     value = cvv,
-                    onValueChange = {
-                        cvv = it.filter { c -> c.isDigit() }.take(4)
-                        cvvError = validarCVV(cvv)
-                    },
+                    onValueChange = { cvv = it },
                     label = { Text("CVV") },
-                    isError = cvvError != null,
-                    supportingText = {
-                        cvvError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                    },
                     modifier = Modifier.weight(1f)
                 )
             }
-
             Spacer(modifier = Modifier.height(32.dp))
-
-
             Button(
                 onClick = {
+
                     nombreError = validarNombre(nombre)
                     apellidoError = validarNombre(apellido)
                     direccionError = validarDireccion(direccion)
                     telefonoError = validarTelefono(telefono)
-                    numTarjetaError = validarNumTarjeta(numTarjeta)
-                    fechaExpError = validarFechaExp(fechaExp)
-                    cvvError = validarCVV(cvv)
+
 
                     if (!isFormValid) {
                         val firstError = listOfNotNull(
-                            nombreError, apellidoError, direccionError, telefonoError,
-                            numTarjetaError, fechaExpError, cvvError
-                        ).firstOrNull() ?: "Revisa los datos ingresados"
-
+                            nombreError, apellidoError, direccionError, telefonoError
+                        ).firstOrNull() ?: "Datos invalidos. Revisa que los datos ingresados sean correctos."
                         scope.launch {
                             snackbarHostState.showSnackbar(
                                 message = firstError,
@@ -250,29 +195,24 @@ fun CompraScreen(
                         }
                         return@Button
                     }
+                        scope.launch {
+                            snackbarHostState.showSnackbar("Datos validados correctamente")
+                            navController.navigate(AppRoutes.COMPRA_FINAL)
 
-                    scope.launch {
-                        comprasViewModel.registrarCompra(
-                            items = carritoViewModel.carritoItems.value,
-                            total = carritoViewModel.precioTotal.value,
-                            nombre = nombre,
-                            apellido = apellido,
-                            direccion = direccion,
-                            telefono = telefono
-                        )
-                        snackbarHostState.showSnackbar("Compra registrada exitosamente")
-                        navController.navigate(AppRoutes.COMPRA_FINAL)
-                    }
+                        }
+
                 },
                 enabled = isFormValid,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+
             ) {
                 Text("Finalizar Compra")
-            }
 
+            }
         }
     }
 }
+
 
 private fun validarNombre(value: String): String? {
     if (value.isBlank()) return "Campo requerido"
@@ -291,37 +231,4 @@ private fun validarTelefono(value: String): String? {
     return if (!regex.matches(value)) "Telefono invalido" else null
 }
 
-private fun validarNumTarjeta(value: String): String? {
-    if (value.isBlank()) return "Campo requerido"
-    return when {
-        value.length < 13 -> "Mínimo 13 dígitos"
-        value.length > 16 -> "Máximo 16 dígitos"
-        else -> null
-    }
-}
 
-private fun validarFechaExp(value: String): String? {
-    if (value.isBlank()) return "Campo requerido"
-
-    val regex = "^(0[1-9]|1[0-2])/([0-9]{2})$".toRegex()
-    if (!regex.matches(value)) return "Formato MM/AA"
-
-    return null
-}
-
-private fun validarCVV(value: String): String? {
-    if (value.isBlank()) return "Campo requerido"
-    return when {
-        value.length < 3 -> "Mínimo 3 dígitos"
-        value.length > 4 -> "Máximo 4 dígitos"
-        else -> null
-    }
-}
-
-private fun formatearFechaExp(input: String): String {
-    val digitsOnly = input.filter { it.isDigit() }.take(4)
-    return when {
-        digitsOnly.length <= 2 -> digitsOnly
-        else -> "${digitsOnly.substring(0, 2)}/${digitsOnly.substring(2)}"
-    }
-}

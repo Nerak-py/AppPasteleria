@@ -2,6 +2,8 @@ package com.example.appevalaucion.ui.screen
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.graphics.drawable.Icon
+import android.widget.Button
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -18,6 +20,8 @@ import androidx.compose.foundation.layout.height
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -38,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import com.example.appevalaucion.R
+import com.example.appevalaucion.components.NavegacionInferior
 import com.example.appevalaucion.ui.theme.CremaPastel
 import com.example.appevalaucion.ui.theme.MarronOscuro
 import com.google.android.gms.location.LocationServices
@@ -131,7 +136,7 @@ fun Geolocalizacion(navController: NavController) {
         }
     }
 
-    Scaffold { innerPadding ->
+    Scaffold() { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()

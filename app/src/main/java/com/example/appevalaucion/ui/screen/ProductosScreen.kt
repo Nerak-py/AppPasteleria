@@ -1,19 +1,37 @@
 package com.example.appevalaucion.ui.screen
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.appevalaucion.model.ProductoCard
+import com.example.appevalaucion.model.listitaProductos
 import com.example.appevalaucion.navigate.AppRoutes
 import com.example.appevalaucion.viewmodel.CarritoViewModel
 import com.example.appevalaucion.viewmodel.ProductosViewModel
@@ -25,40 +43,23 @@ fun ProductosScreen(
     navController: NavController,
     productosViewModel: ProductosViewModel,
     carritoViewModel: CarritoViewModel,
-    usuarioId: Long = 1L,  // ✅ Usuario por defecto para testing
     isOfertas: Boolean = false
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    // Estados
-    val allProducts by productosViewModel.pastelitos.collectAsState()
-    val carritoItems by carritoViewModel.carritoItems.collectAsState()
-    val totalItems = carritoItems.sumOf { it.cantidad }
-
-    LaunchedEffect(Unit) {
-        productosViewModel.recuperarPastelitos()
-        // ✅ Cargar el carrito del usuario al inicio
-        if (usuarioId > 0) {
-            carritoViewModel.cargarCarrito(usuarioId)
-        }
+    val allProducts = remember(isOfertas) {
+        if (isOfertas) listitaProductos.filter { it.precioOferta != null } else listitaProductos
     }
 
-    // Lógica de filtrado
-    val filteredProducts = remember(allProducts, isOfertas) {
-        if (isOfertas) allProducts.filter { it.precioOferta != null && it.precioOferta!! > 0 }
-        else allProducts
-    }
-
-    val categories = remember(filteredProducts) {
-        listOf("Todos") + filteredProducts.mapNotNull { it.categoria }.distinct()
+    val categories = remember(allProducts) {
+        listOf("Todos") + allProducts.map { it.categoria }.distinct()
     }
 
     var selectedCategory by remember { mutableStateOf("Todos") }
 
-    val productos = remember(filteredProducts, selectedCategory) {
-        if (selectedCategory == "Todos") filteredProducts
-        else filteredProducts.filter { it.categoria == selectedCategory }
+    val productos = remember(allProducts, selectedCategory) {
+        if (selectedCategory == "Todos") allProducts else allProducts.filter { it.categoria == selectedCategory }
     }
 
     Scaffold(
@@ -68,20 +69,6 @@ fun ProductosScreen(
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver")
-                    }
-                },
-                actions = {
-                    // Carrito en la barra superior
-                    IconButton(onClick = { navController.navigate(AppRoutes.CARRITO) }) {
-                        BadgedBox(
-                            badge = {
-                                if (totalItems > 0) {
-                                    Badge { Text("$totalItems") }
-                                }
-                            }
-                        ) {
-                            Icon(Icons.Default.ShoppingCart, "Carrito")
-                        }
                     }
                 }
             )
@@ -93,15 +80,15 @@ fun ProductosScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Filtros (Chips)
             LazyRow(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(end = 8.dp)
             ) {
                 items(categories) { categoria ->
+                    val isSelected = selectedCategory == categoria
                     FilterChip(
-                        selected = selectedCategory == categoria,
+                        selected = isSelected,
                         onClick = { selectedCategory = categoria },
                         label = { Text(categoria) },
                         colors = FilterChipDefaults.filterChipColors(
@@ -114,47 +101,28 @@ fun ProductosScreen(
                 }
             }
 
-            if (productos.isEmpty() && allProducts.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
-            } else if (productos.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(
-                        text = "No hay productos en esta categoría",
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 16.dp),
-                    contentPadding = PaddingValues(bottom = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    items(productos, key = { it.id }) { producto ->
-                        ProductoCard(
-                            producto = producto,
-                            onClick = {
-                                navController.navigate("${AppRoutes.COMPRA}/${producto.id}")
-                            },
-                            onAddToCartClick = {
-                                // ✅ Validar que el usuario sea válido
-                                if (usuarioId > 0) {
-                                    carritoViewModel.agregarProductoAlCarrito(usuarioId, producto, 1)
-                                    scope.launch {
-                                        snackbarHostState.currentSnackbarData?.dismiss()
-                                        snackbarHostState.showSnackbar("${producto.nombre} agregado al carrito")
-                                    }
-                                } else {
-                                    scope.launch {
-                                        snackbarHostState.showSnackbar("Debes iniciar sesión para agregar productos")
-                                    }
-                                }
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp),
+                contentPadding = PaddingValues(bottom = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                items(productos) { producto ->
+                    ProductoCard(
+                        producto = producto,
+                        onCardClick = {
+                            navController.navigate(AppRoutes.COMPRA)
+                        },
+                        onAddToCartClick = {
+                            carritoViewModel.anadirAlCarrito(producto)
+                            scope.launch {
+                                snackbarHostState.showSnackbar(
+                                    message = "${producto.nombre} añadido al carrito"
+                                )
                             }
-                        )
-                    }
+                        }
+                    )
                 }
             }
         }

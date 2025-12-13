@@ -1,104 +1,51 @@
+
 package com.example.appevalaucion.viewmodel
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.example.appevalaucion.model.Usuario
-import com.example.appevalaucion.repository.UsuarioRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
+import java.util.Date
 
 class UsuarioViewModel : ViewModel() {
-
-    private val repository = UsuarioRepository()
-
     private val _usuario = MutableStateFlow<Usuario?>(null)
+
     val usuario: StateFlow<Usuario?> = _usuario.asStateFlow()
 
-    private val _usuarios = MutableStateFlow<List<Usuario>>(emptyList())
-    val usuarios: StateFlow<List<Usuario>> = _usuarios.asStateFlow()
 
-    fun setUsuario(usuario: Usuario?) {
-        _usuario.value = usuario
+    fun registrarUsuario(nombre: String, email: String, contrasena: String) {
+
+        val nuevoUsuario = Usuario(
+            id = Date().time.toString(),
+            nombre = nombre,
+            email = email,
+            contrasena = contrasena
+        )
+
+        // Después de registrar, iniciamos sesión automáticamente
+        _usuario.value = nuevoUsuario
     }
 
-    fun recuperarUsuarios() {
-        viewModelScope.launch {
-            try {
-                _usuarios.value = repository.recuperarUsuarios()
-            } catch (e: Exception) {
-                Log.e("UsuarioViewModel", "Error recuperando usuarios", e)
-            }
+
+
+    // NO ESTA EN USO
+    fun login(email: String, contrasena: String) {
+
+        if (email.isNotEmpty() && contrasena.isNotEmpty()) {
+            _usuario.value = Usuario(
+                id = "12345",
+                nombre = "Pablo",
+                apellido = "Marmol",
+                email = email,
+                region = "Metropolitana",
+                comuna = "Pastelillo",
+                esEstudianteDuoc = email.endsWith("@duoc.cl")
+            )
         }
     }
-
-    fun grabarUsuario(usuario: Usuario) {
-        viewModelScope.launch {
-            try {
-                val success = repository.grabarUsuario(usuario)
-                if (success) recuperarUsuarios()
-            } catch (e: Exception) {
-                Log.e("UsuarioViewModel", "Error grabando usuario", e)
-            }
-        }
-    }
-
-    fun eliminarUsuario(id: String) { // ✅ Cambiado a String
-        viewModelScope.launch {
-            try {
-                val success = repository.eliminarUsuario(id.toLongOrNull() ?: 0L)
-                if (success) recuperarUsuarios()
-            } catch (e: Exception) {
-                Log.e("UsuarioViewModel", "Error eliminando usuario", e)
-            }
-        }
-    }
-
-    fun updateUsuario(usuario: Usuario) {
-        viewModelScope.launch {
-            try {
-                val updated = repository.updateUsuario(usuario)
-                if (updated != null) {
-                    _usuario.value = updated
-                    recuperarUsuarios()
-                }
-            } catch (e: Exception) {
-                Log.e("UsuarioViewModel", "Error actualizando usuario", e)
-            }
-        }
-    }
-
-    fun registrarUsuario(nombre: String, email: String, contrasena: String, onResult: (Boolean) -> Unit) {
-        viewModelScope.launch {
-            try {
-                val usuario = Usuario(
-                    id = "", // El backend genera el ID
-                    nombre = nombre,
-                    apellido = "",
-                    email = email,
-                    contrasena = contrasena
-                )
-                val response = repository.register(usuario)
-
-                if (response.isSuccessful && response.body() != null) {
-                    _usuario.value = response.body() // ✅ Guardar usuario registrado
-                    Log.d("UsuarioViewModel", "Usuario registrado exitosamente: ${response.body()}")
-                    onResult(true)
-                } else {
-                    val errorBody = response.errorBody()?.string()
-                    Log.e("UsuarioViewModel", "Error al registrar: ${response.code()} - $errorBody")
-                    onResult(false)
-                }
-            } catch (e: Exception) {
-                Log.e("UsuarioViewModel", "Excepción al registrar usuario", e)
-                onResult(false)
-            }
-        }
-    }
-
-    fun cerrarSesion() {
+    // NO ESTA EN USO
+    fun logout() {
         _usuario.value = null
     }
 }
